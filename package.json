@@ -1,5 +1,5 @@
 {
-  "name": "vercel-api-rag-sse",
+  "name": "vercel-api",
   "version": "0.2.0",
   "private": true,
   "type": "module",
