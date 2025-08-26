@@ -3,26 +3,17 @@ import { OpenAI } from "openai";
 
 const EMB_MODEL = process.env.EMBED_MODEL || "text-embedding-3-small";
 
-// Support alternate providers (e.g., OpenRouter) + org header
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE,                 // e.g. https://openrouter.ai/api/v1
-  organization: process.env.OPENAI_ORG_ID,          // optional
-  // Helpful for OpenRouter rate-limits/analytics (optional, safe to keep)
+  baseURL: process.env.OPENAI_BASE,        // e.g. https://openrouter.ai/api/v1 (optional)
+  organization: process.env.OPENAI_ORG_ID, // optional
   defaultHeaders: {
     ...(process.env.SITE_URL ? { "HTTP-Referer": process.env.SITE_URL } : {}),
     "X-Title": "YourBot",
   },
 });
 
-function chunk<T>(arr: T[], size: number) {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 function formatErr(err: any) {
-  // Try to bubble up the real reason (invalid key, insufficient_quota, etc.)
   return (
     err?.response?.data?.error?.message ||
     err?.response?.data?.message ||
@@ -31,21 +22,19 @@ function formatErr(err: any) {
   );
 }
 
-/**
- * Embed multiple texts with simple batching to avoid provider limits.
- * Batches sequentially to reduce 429s on free/low-quota keys.
- */
 export async function embedTexts(texts: string[], batchSize = 64): Promise<number[][]> {
-  const batches = chunk(texts, batchSize);
   const vectors: number[][] = [];
-  for (const b of batches) {
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const batch = texts.slice(i, i + batchSize);
     try {
-      const res = await client.embeddings.create({ model: EMB_MODEL, input: b });
-      for (const d of res.data) vectors.push(d.embedding as number[]);
+      const res = await client.embeddings.create({ model: EMB_MODEL, input: batch });
+      const data = res?.data;
+      if (!Array.isArray(data) || data.length !== batch.length) {
+        throw new Error(`no embedding array returned for ${batch.length} inputs`);
+      }
+      for (const d of data) vectors.push(d.embedding as number[]);
     } catch (e) {
-      const msg = formatErr(e);
-      // Throw with context so the caller can log/return a clear error
-      throw new Error(`embedTexts failed (${EMB_MODEL}): ${msg}`);
+      throw new Error(`embedTexts failed (${EMB_MODEL}): ${formatErr(e)}`);
     }
   }
   return vectors;
@@ -54,9 +43,10 @@ export async function embedTexts(texts: string[], batchSize = 64): Promise<numbe
 export async function embedQuery(q: string): Promise<number[]> {
   try {
     const res = await client.embeddings.create({ model: EMB_MODEL, input: q });
-    return res.data[0].embedding as number[];
+    const vec = res?.data?.[0]?.embedding;
+    if (!vec) throw new Error("no embedding returned from provider");
+    return vec as number[];
   } catch (e) {
-    const msg = formatErr(e);
-    throw new Error(`embedQuery failed (${EMB_MODEL}): ${msg}`);
+    throw new Error(`embedQuery failed (${EMB_MODEL}): ${formatErr(e)}`);
   }
 }
