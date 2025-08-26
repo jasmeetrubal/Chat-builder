@@ -1,8 +1,8 @@
 {
-  "name": "vercel-api-rag-sse",
+  "name": "vercel-api",
   "version": "0.2.0",
   "private": true,
-  "type": "commonjs"
+  "type": "module"
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev"
