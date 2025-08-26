@@ -2,7 +2,7 @@
   "name": "vercel-api",
   "version": "0.2.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs"
   "scripts": {
     "dev": "vercel dev",
     "start": "vercel dev"
