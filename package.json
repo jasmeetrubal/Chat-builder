@@ -1,5 +1,5 @@
 {
-  "name": "vercel-api",
+  "name": "vercel-api-rag-sse",
   "version": "0.2.0",
   "private": true,
   "type": "commonjs"
