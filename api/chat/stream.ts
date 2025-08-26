@@ -54,10 +54,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (err: any) {
-    try {
-      res.write(`data: ${JSON.stringify({ token: "\n[stream-error]" })}\n\n`);
-      res.write("data: [DONE]\n\n");
-      res.end();
-    } catch {}
-  }
+  const msg =
+    err?.response?.data?.error?.message ||
+    err?.message ||
+    'unknown';
+  console.error('stream-fail', msg);
+  try {
+    res.write(`data: ${JSON.stringify({ token: `\n[stream-error:${msg}]` })}\n\n`);
+    res.write("data: [DONE]\n\n");
+    res.end();
+  } catch {}
 }
