@@ -7,11 +7,11 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY || ""}`,
         ...(process.env.SITE_URL ? { "HTTP-Referer": process.env.SITE_URL } : {}),
-        "X-Title": "YourBot",
-      },
+        "X-Title": "YourBot"
+      }
     });
     const text = await r.text();
-    res.status(200).json({ ok: r.ok, status: r.status, base, sample: text.slice(0, 200) });
+    res.status(200).json({ ok: r.ok, status: r.status, base, sample: text.slice(0, 160) });
   } catch (e: any) {
     res.status(200).json({ ok: false, base, error: e?.message || "fetch failed" });
   }
