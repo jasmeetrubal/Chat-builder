@@ -1,12 +1,24 @@
 {
-  "name": "chat-builder",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@vercel/blob": "0.23.1",
-    "openai": "4.56.0"
-  },
-  "devDependencies": {
-    "typescript": "5.9.2"
+  "functions": {
+    "api/chat/stream.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/chat/index.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/kb/add-urls.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/kb/status.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    },
+    "api/kb/search.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    }
   }
 }
