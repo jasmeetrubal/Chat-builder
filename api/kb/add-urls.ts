@@ -1,42 +1,34 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import cheerio from "cheerio";
-import { chunkText } from "../../lib/chunker.js";
-import { embedTexts } from "../../lib/embeddings.js";
-import { saveIndex, loadIndex } from "../../lib/blobStore.js";
-// CORS
-res.setHeader("Access-Control-Allow-Origin", "*");
-res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-if (req.method === "OPTIONS") { res.status(204).end(); return; }
+// api/kb/add-urls.ts
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { loadIndex, saveIndex } from '../../blobStore';
+import { fetchText } from '../../fetchText';
+import { chunkText } from '../../chunker';
+import { embedTexts } from '../../embeddings';
 
-async function fetchText(url: string) {
-  const html = await fetch(url).then((r) => r.text());
-  const $ = cheerio.load(html);
-  $("script,style,noscript,nav,footer,header").remove();
-  const title = $("title").text() || url;
-  const text = title + "\n\n" + $("body").text().replace(/\s+/g, " ").trim();
-  return text;
+function setCors(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  if (req.method === "OPTIONS") { res.status(204).end(); return; }
+  setCors(res);
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
 
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "POST only" });
+  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+  const botId: string = body.botId;
+  const urls: string[] = Array.isArray(body.urls) ? body.urls : [];
+
+  if (!botId || !urls.length) {
+    res.status(400).json({ error: 'botId and urls[] required' });
     return;
   }
-  const { botId, urls } = (req.body as any) || {};
-  if (!botId || !Array.isArray(urls) || urls.length === 0) {
-    res.status(400).json({ error: "botId and urls[] required" });
-    return;
-  }
+
   try {
     const index = await loadIndex(botId);
-    const added: any[] = [];
+    const added: Array<{ url: string; chunks: number }> = [];
+
     for (const url of urls) {
       try {
         const fullText = await fetchText(url);
@@ -46,19 +38,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: url,
           text: t,
         }));
-        const vecs = await embedTexts(chunks.map((c) => c.text));
+
+        const vecs = await embedTexts(chunks.map(c => c.text));
         for (let i = 0; i < chunks.length; i++) (chunks[i] as any).embedding = vecs[i];
+
         (index.chunks ||= []);
-        index.chunks = index.chunks.filter((c: any) => !(c.id || "").startsWith(`url:${url}#`));
+        // drop old chunks of the same url
+        index.chunks = index.chunks.filter((c: any) => !(String(c.id || '').startsWith(`url:${url}#`)));
         index.chunks.push(...chunks);
+
+        // track source urls
+        index.sources = Array.from(new Set([...(index.sources || []), url]));
+
         added.push({ url, chunks: chunks.length });
       } catch (e: any) {
-        console.error("ingest failed for", url, e?.message);
+        console.error('ingest failed for', url, e?.message);
       }
     }
+
+    index.bytes = Buffer.byteLength(JSON.stringify(index), 'utf8');
     await saveIndex(botId, index);
-    res.json({ ok: true, added, stats: { chunks: (index.chunks || []).length } });
+    res.json({ ok: true, added, stats: { chunks: (index.chunks || []).length, bytes: index.bytes } });
   } catch (e: any) {
-    res.status(500).json({ error: "server_error" });
+    res.status(500).json({ error: e?.message || 'server_error' });
   }
 }
