@@ -1,10 +1,24 @@
 {
-  "version": 2,
   "functions": {
-    "api/**/*.ts": {
+    "api/chat/stream.ts": {
       "runtime": "nodejs20.x",
       "maxDuration": 60
+    },
+    "api/chat/index.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/kb/add-urls.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "api/kb/status.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    },
+    "api/kb/search.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
     }
   }
 }
-
