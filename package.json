@@ -1,16 +1,23 @@
 {
-  "name": "chat-builder",
+  "name": "vercel-api",
+  "version": "0.2.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "build": "echo \"api-only\"",
-    "vercel-build": "npm run build"
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
-    "@vercel/blob": "^0.23.1",
-    "openai": "^4.56.0"
+    "@vercel/blob": "0.25.0",
+    "cheerio": "1.0.0-rc.12",
+    "openai": "^4.53.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.10",
+    "@vercel/node": "^3.2.20",
+    "vercel": "^34.2.2"
   }
 }
