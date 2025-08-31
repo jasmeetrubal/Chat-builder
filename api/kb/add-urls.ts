@@ -3,6 +3,11 @@ import cheerio from "cheerio";
 import { chunkText } from "../../lib/chunker.js";
 import { embedTexts } from "../../lib/embeddings.js";
 import { saveIndex, loadIndex } from "../../lib/blobStore.js";
+// CORS
+res.setHeader("Access-Control-Allow-Origin", "*");
+res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+if (req.method === "OPTIONS") { res.status(204).end(); return; }
 
 async function fetchText(url: string) {
   const html = await fetch(url).then((r) => r.text());
